@@ -179,6 +179,7 @@ class NegLogStatePriors(ObjectiveBase):
 
         self.model = model
         self.solver = amici_solver
+        
 
         self.time_points = time_points
         self.model.setTimepoints(time_points)
