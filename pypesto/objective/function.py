@@ -8,7 +8,7 @@ from .constants import MODE_FUN, MODE_RES, FVAL, GRAD, HESS, RES, SRES
 
 class Objective(ObjectiveBase):
     """
-    The objective class allows the user explicitely specify functions that
+    The objective class allows the user explicitly specify functions that
     compute the function value and/or residuals as well as respective
     derivatives.
 
