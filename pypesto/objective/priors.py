@@ -179,7 +179,6 @@ class NegLogStatePriors(ObjectiveBase):
 
         self.model = model
         self.solver = amici_solver
-        
 
         self.time_points = time_points
         self.model.setTimepoints(time_points)
@@ -564,13 +563,14 @@ def _get_gaussian_process_densities(time_points: np.array,
     return log_f, d_log_f_dx
 
 
-def _get_kernel(prior_type: str):
+def _get_kernel(prior_type: str,
+                parameter_dict: dict):
     """
     Returns the kernel function for priors. Currently supports the prior types:
 
-        - 'squared exponential'
-        - 'Ornstein-Uhlenbeck'
-        - 'linear'
+        - 'squared exponential': {'tau': float, 'l': float}
+        - 'Ornstein-Uhlenbeck': {'tau': float, 'l': float}
+        - 'linear': {'l': float}
 
     """
     if prior_type == 'squared exponential':
@@ -596,7 +596,7 @@ def _get_kernel(prior_type: str):
         """
         def kernel_function(t_i: float,
                             t_j: float):
-            return t_i*t_j
+            return parameter_dict['l'] * t_i * t_j
     else:
         raise NotImplementedError(f'Unknown prior type {prior_type} in '
                                   f'_get_gaussian_process_densities')
