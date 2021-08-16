@@ -10,7 +10,6 @@ from .optimizer import Optimizer, ScipyOptimizer
 from .options import OptimizeOptions
 from .task import OptimizerTask
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +39,7 @@ def minimize(
         Ids assigned to the startpoints.
     startpoint_method:
         Method for how to choose start points. False means the optimizer does
-        not require start points, e.g. 'pso' method in 'GlobalOptimizer'
+        not require start points, e.g. for the 'PyswarmOptimizer'.
     result:
         A result object to append the optimization results to. For example,
         one might append more runs to a previous optimization. If None,
@@ -65,7 +64,14 @@ def minimize(
         optimizer = ScipyOptimizer()
 
     # startpoint method
-    if startpoint_method is None:
+    if (startpoint_method is not None) \
+            and (problem.startpoint_method is not None):
+        raise Warning('Problem.startpoint_method will be ignored. Start '
+                      'points will be generated using the startpoint method '
+                      'given as an argument to the minimize function.')
+    elif problem.startpoint_method is not None:
+        startpoint_method = problem.startpoint_method
+    elif startpoint_method is None:
         startpoint_method = uniform
 
     # check options

@@ -1,0 +1,272 @@
+
+parameters: 
+
+#First Row A
+
+   - parameterId: a_11
+     nominalValue: 0
+     
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_12
+     nominalValue: -0.6
+     
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_13
+     nominalValue: 0
+     
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_14
+     nominalValue: -0.2
+     
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+#Second Row A
+
+   - parameterId: a_21
+     nominalValue: 0.6
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_22
+     nominalValue: 0
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_23
+     nominalValue: -0.6
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_24
+     nominalValue: -0.2
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+#Third Row A
+
+   - parameterId: a_31
+     nominalValue: 0
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_32
+     nominalValue: 0.6
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_33
+     nominalValue: 0
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_34
+     nominalValue: -0.2
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+#Fourth Row A
+
+   - parameterId: a_41
+     nominalValue: 0.2
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_42
+     nominalValue: 0.2
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_43
+     nominalValue: 0.2
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+   - parameterId: a_44
+     nominalValue: 0
+          
+     parameterScale: lin
+     lowerBound: -2
+     upperBound: 2
+     estimate: 1
+     
+     objectivePriorType: "laplace"
+     objectivePriorParameters: "0; 1"
+
+# d
+
+   - parameterId: d_1
+     nominalValue: 2
+          
+     parameterScale: lin
+     lowerBound: -3
+     upperBound: 3
+     estimate: 1
+
+   - parameterId: d_2
+     nominalValue: 1
+          
+     parameterScale: lin
+     lowerBound: -3
+     upperBound: 3
+     estimate: 1
+
+   - parameterId: d_3
+     nominalValue: 0
+          
+     parameterScale: lin
+     lowerBound: -3
+     upperBound: 3
+     estimate: 0
+
+   - parameterId: d_4
+     nominalValue: -3
+          
+     parameterScale: lin
+     lowerBound: -3
+     upperBound: 3
+     estimate: 1
+
+
+functions:
+    - functionId: f
+      arguments: x1, x2, x3, x4, a1, a2, a3, a4, d
+      formula: a1*x1 + a2*x2 + a3*x3 + a4*x4 + d
+
+
+odes:
+    - stateId: x_1
+      rightHandSide: x_1 * f(x_1, x_2, x_3, x_4, a_11, a_12, a_13, a_14, d_1)
+      initialValue: 5
+
+    - stateId: x_2
+      rightHandSide: x_2 * f(x_1, x_2, x_3, x_4, a_21, a_22, a_23, a_24, d_2)
+      initialValue: 4
+
+    - stateId: x_3
+      rightHandSide: x_3 * f(x_1, x_2, x_3, x_4, a_31, a_32, a_33, a_34, d_3)
+      initialValue: 3
+
+    - stateId: x_4
+      rightHandSide: x_4 * f(x_1, x_2, x_3, x_4, a_41, a_42, a_43, a_44, d_4)
+      initialValue: 2
+
+observables:
+    - observableId: obs_1
+      observableFormula: x_1
+
+      noiseFormula: noiseParameter1_obs_1
+      noiseDistribution: normal
+    
+    - observableId: obs_2
+      observableFormula: x_2
+
+      noiseFormula: noiseParameter1_obs_2
+      noiseDistribution: normal
+      
+    - observableId: obs_3
+      observableFormula: x_3
+
+      noiseFormula: noiseParameter1_obs_3
+      noiseDistribution: normal
+      
+    - observableId: obs_4
+      observableFormula: x_4
+
+      noiseFormula: noiseParameter1_obs_4
+      noiseDistribution: normal
+
+conditions:
+      - conditionId: condition1
