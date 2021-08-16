@@ -81,7 +81,8 @@ class NegLogParameterPriors(ObjectiveBase):
             self,
             x: np.ndarray,
             sensi_orders: Tuple[int, ...],
-            mode: str
+            mode: str,
+            **kwargs
     ) -> ResultDict:
 
         res = {}
@@ -197,7 +198,8 @@ class NegLogStatePriors(ObjectiveBase):
             self,
             x: np.ndarray,
             sensi_orders: Tuple[int, ...],
-            mode: str
+            mode: str,
+            **kwargs
     ) -> ResultDict:
         """Evaluates the state priors for given parameters x. """
 
