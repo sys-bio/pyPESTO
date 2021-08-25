@@ -178,7 +178,11 @@ class NegLogStatePriors(ObjectiveBase):
                  amici_solver: AmiciSolver,
                  time_points: np.array,
                  prior_list: list,
-                 x_names: Sequence[str] = None):
+                 x_names: Sequence[str] = None,
+                 x_scales: Sequence[str]=None):
+        """
+        ToDo Docs
+        """
 
         self.model = model
         self.solver = amici_solver
@@ -187,12 +191,24 @@ class NegLogStatePriors(ObjectiveBase):
         self.model.setTimepoints(time_points)
 
         self.prior_list = prior_list
+        self.x_scales = x_scales
 
         super().__init__(x_names)
 
     def __deepcopy__(self, memodict={}):
-        # TODO
-        raise NotImplementedError
+
+        other = self.__class__.__new__(self.__class__)
+
+        # copy objects that do not have __deepcopy__
+        other.model = self.model.clone()
+        other.solver = self.solver.clone()
+
+        other.time_points = self.time_points
+        other.model.setTimepoints(other.time_points)
+
+        other.prior_list = deepcopy(self.prior_list)
+
+        return other
 
     def call_unprocessed(
             self,
@@ -204,6 +220,8 @@ class NegLogStatePriors(ObjectiveBase):
         """Evaluates the state priors for given parameters x. """
 
         # Simulate the model forward and evaluate at time points...
+        x_lin = _scale2lin(x)
+        self.model.setParameters(x_lin)
         rdata = amici.runAmiciSimulation(self.model, self.solver)
 
         trajectory = rdata['x']
@@ -222,9 +240,10 @@ class NegLogStatePriors(ObjectiveBase):
         # for prior in prior_list: Evaluate Prior...
         for prior in self.prior_list:
             if 0 in sensi_orders:
-                res[FVAL] += prior['fun'](trajectory, self.time_points)
+                res[FVAL] -= prior['fun'](trajectory)
             if 1 in sensi_orders:
-                res[GRAD] += prior['fun_dx'](trajectory, s_trajectory, x)
+                res[GRAD] -= prior['fun_dx'](x, trajectory, s_trajectory)
+
         return res
 
     def check_mode(self, mode) -> bool:
@@ -240,7 +259,11 @@ class NegLogStatePriors(ObjectiveBase):
                            sensi_orders: Tuple[int, ...],
                            mode: str) -> bool:
 
-        raise NotImplementedError
+        sensi_order = max(sensi_orders)
+        if sensi_order < 2:
+            return True
+        else:
+            return False
 
 
 def get_parameter_prior_dict(index: int,
@@ -514,23 +537,26 @@ def get_state_prior_dict(index: int,
     def fun(trajectory: np.array):
         return log_f(trajectory[:, index])
 
-    def fun_dx(trajectory,
-               s_trajectory,
-               x):
+    def fun_dx(x,
+               trajectory: np.array,
+               s_trajectory: np.array,
+               ):
 
-        grad = d_log_f_dx(trajectory[:, index],
+        grad = d_log_f_dx(x,
+                          trajectory[:, index],
                           s_trajectory[:, :, index])
 
+        """
         # chain rule for parameter transformations
         for idx, scale in enumerate(parameter_scales):
             if scale == 'log':
-                grad[idx] *= np.exp(x[idx])
+                grad[idx] = grad[idx] * np.exp(x[idx])
 
             elif scale == 'log10':
-                grad[idx] *= np.log(10) * 10 ** x[idx]
+                grad[idx] =  grad[idx] * (np.log(10) * 10 ** x[idx])
             elif scale != 'lin':
                 raise ValueError(f'Unknown parameter scale {scale}.')
-
+        """
         return grad
 
     prior_dict['fun'] = fun
@@ -565,7 +591,8 @@ def _get_gaussian_process_densities(time_points: np.array,
     n_t = time_points.size
     mu = parameter_dict['mu']
 
-    kernel_function = _get_kernel(prior_type)
+    kernel_function = _get_kernel(prior_type,
+                                  parameter_dict)
     cov = _get_covariance_from_kernel(kernel_function,
                                       time_points)
 
@@ -573,32 +600,33 @@ def _get_gaussian_process_densities(time_points: np.array,
     # TODO: cholesky factorization/solve via scipy.linalg cho_solve and cho_factor!!!
     inv_cov = np.linalg.inv(cov)
 
-    def log_f(x: np.array):
+    def log_f(trajectory: np.array):
         """
         Computes the log-density of a Gaussian process for a trajectory x.
         (CAUTION: Here only the trajectory for a specific state
         (i.e. TODO) should be given.)
         """
         return -1/2 * np.sqrt((2*np.pi)**n_t * det_cov) - \
-               1/2 * np.dot(inv_cov.dot((x-mu)), x-mu)
+               1/2 * np.dot(inv_cov.dot((trajectory-mu)), trajectory-mu)
 
-    def d_log_f_dx(x:np.array,
-                   sx: np.array):
+    def d_log_f_dx(x,
+                   trajectory:np.array,
+                   s_trajectory: np.array):
         """
         Computes the derivative of  the log-density of a Gaussian process for
-        a trajectory x.
+        a trajectory.
 
-        (CAUTION: Here only the trajectory x and sensitivities sx for a
+        (CAUTION: Here only the trajectory and sensitivities sx for a
         specific state (i.e. sx.shape = (n_time, n_parameters), and sx is the
         [:, :, index]th entry of the AMICI simulation.)
          should be given.)
         """
 
         grad = np.nan * np.ones_like(x)
-        x_t_inv_cov = - inv_cov.dot(x-mu) # Sigma^{-1}*(x-mu)
+        x_t_inv_cov = - inv_cov.dot(trajectory-mu)  # - Sigma^{-1}*(x-mu)
 
         for i in range(grad.size):
-            grad[i] = np.dot(x_t_inv_cov, sx[:, i])
+            grad[i] = np.dot(x_t_inv_cov, s_trajectory[:, i])
 
         return grad
 
@@ -622,7 +650,7 @@ def _get_kernel(prior_type: str,
         def kernel_function(t_i: float,
                             t_j: float):
             return parameter_dict['tau']**2 \
-                   * np.exp((t_i - t_j)**2 / (2*parameter_dict['l']**2))
+                   * np.exp(- (t_i - t_j)**2 / (2*parameter_dict['l']**2))
 
     elif prior_type == 'Ornstein-Uhlenbeck':
         """
@@ -631,7 +659,7 @@ def _get_kernel(prior_type: str,
         def kernel_function(t_i: float,
                             t_j: float):
             return parameter_dict['tau']**2 \
-                   * np.exp(np.abs(t_i - t_j) / (parameter_dict['l']**2))
+                   * np.exp(- np.abs(t_i - t_j) / (parameter_dict['l']**2))
     elif prior_type == 'linear':
         """
         k(t_i, t_j) = t_i * t_j
@@ -641,7 +669,7 @@ def _get_kernel(prior_type: str,
             return parameter_dict['l'] * t_i * t_j
     else:
         raise NotImplementedError(f'Unknown prior type {prior_type} in '
-                                  f'_get_gaussian_process_densities')
+                                  f'_get_kernel.')
 
     return kernel_function
 
@@ -666,3 +694,26 @@ def _get_covariance_from_kernel(kernel_function: Callable,
 
     return cov
 
+def _scale2lin(x:np.array,
+               x_scales: Sequence[str] = None):
+    """
+    Transforms the scaled parameter to linear parameters.
+    """
+
+    if x_scales is None:
+        return x
+    else:
+        x_lin = np.nan * np.ones_like(x)
+
+        for i, x_i in enumerate(x):
+
+            if x_scales[i] is 'lin':
+                x_lin[i] = x_i
+            elif x_scales[i] is 'log':
+                x_lin[i] = np.exp(x_i)
+            elif x_scales[i] is 'log10':
+                x_lin[i] = 10**x_i
+            else:
+                raise ValueError(f"Unknown scale {x_scales[i]}.")
+
+        return x_lin
