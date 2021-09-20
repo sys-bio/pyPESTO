@@ -33,6 +33,10 @@ class ParallelTemperingSampler(Sampler):
 
         self.temper_lpost = self.options['temper_log_posterior']
 
+        self.accepted_swaps: Union[Sequence[np.ndarray], None] = None
+        self.temperatures: Union[Sequence[np.ndarray], None] = None
+        self.swap_acceptance_rate = None
+
         self.samplers = [copy.deepcopy(internal_sampler)
                          for _ in range(len(self.betas0))]
         # configure internal samplers
@@ -60,6 +64,8 @@ class ParallelTemperingSampler(Sampler):
             _problem = copy.deepcopy(problem)
             sampler.initialize(_problem, x0)
         self.betas = self.betas0
+        self.accepted_swaps = [np.zeros([n_chains-1])]
+        self.temperatures = [1/self.betas]
 
     def sample(
             self, n_samples: int, beta: float = 1.):
@@ -72,32 +78,65 @@ class ParallelTemperingSampler(Sampler):
             # swap samples
             swapped = self.swap_samples()
 
+            # store swaps
+            self.accepted_swaps.append(swapped)
+
             # adjust temperatures
             self.adjust_betas(i_sample, swapped)
 
-    def get_samples(self) -> McmcPtResult:
+            # store temperatures
+            self.temperatures.append(1/self.betas)
+
+    def get_samples(self, debug: bool) -> McmcPtResult:
         """Concatenate all chains."""
-        results = [sampler.get_samples() for sampler in self.samplers]
+        results = [sampler.get_samples(debug=debug) for sampler in self.samplers]
         trace_x = np.array([result.trace_x[0] for result in results])
         trace_neglogpost = np.array([result.trace_neglogpost[0]
                                      for result in results])
         trace_neglogprior = np.array([result.trace_neglogprior[0]
                                       for result in results])
-        return McmcPtResult(
-            trace_x=trace_x,
-            trace_neglogpost=trace_neglogpost,
-            trace_neglogprior=trace_neglogprior,
-            betas=self.betas
-        )
+        if not debug:
+            return McmcPtResult(
+                trace_x=trace_x,
+                trace_neglogpost=trace_neglogpost,
+                trace_neglogprior=trace_neglogprior,
+                betas=self.betas
+            )
+        else:
+            covariance_scale_history = np.array([result.covariance_scale_history
+                                                 for result in results])
+            covariance_history = np.array([result.covariance_history
+                                           for result in results])
+            cum_accepted_samples = np.array([result.cum_accepted_samples[0]
+                                             for result in results])
+            # total number of proposed swaps
+            n_proposed_swaps = len(self.accepted_swaps)*len(self.accepted_swaps[0])
+            # total number of accepted swaps
+            n_acc_swaps = float(np.sum(np.asarray(self.accepted_swaps)))
+            # calculate swap acceptance rate
+            self.swap_acceptance_rate = n_acc_swaps/n_proposed_swaps
 
-    def swap_samples(self) -> Sequence[bool]:
+            return McmcPtResult(
+                trace_x=trace_x,
+                trace_neglogpost=trace_neglogpost,
+                trace_neglogprior=trace_neglogprior,
+                betas=self.betas,
+                cum_accepted_samples=cum_accepted_samples,
+                covariance_scale_history=covariance_scale_history,
+                covariance_history=covariance_history,
+                temperatures=np.asarray(self.temperatures),
+                accepted_swaps=np.asarray(self.accepted_swaps),
+                swap_acceptance_rate=self.swap_acceptance_rate
+            )
+
+    def swap_samples(self) -> np.ndarray:
         """Swap samples as in Vousden2016."""
         # for recording swaps
         swapped = []
 
         if len(self.betas) == 1:
             # nothing to be done
-            return swapped
+            return np.asarray(swapped)
 
         # beta differences
         dbetas = self.betas[:-1] - self.betas[1:]
@@ -128,9 +167,13 @@ class ParallelTemperingSampler(Sampler):
 
             # record
             swapped.insert(0, swap)
+
+        # booleans to integer array
+        swapped = np.array([int(swap) for swap in swapped])
+
         return swapped
 
-    def adjust_betas(self, i_sample: int, swapped: Sequence[bool]):
+    def adjust_betas(self, i_sample: int, swapped: np.ndarray):
         """Adjust temperature values. Default: Do nothing."""
 
 

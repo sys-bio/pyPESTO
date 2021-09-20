@@ -16,7 +16,8 @@ def sample(
         n_samples: int,
         sampler: Sampler = None,
         x0: Union[np.ndarray, List[np.ndarray]] = None,
-        result: Result = None
+        result: Result = None,
+        debug: bool = False
 ) -> Result:
     """
     This is the main function to call to do parameter sampling.
@@ -38,6 +39,8 @@ def sample(
     result:
         A result to write to. If None provided, one is created from the
         problem.
+    debug:
+        Whether to return additional information from the Markov chain.
 
     Returns
     -------
@@ -60,6 +63,9 @@ def sample(
     if sampler is None:
         sampler = AdaptiveMetropolisSampler()
 
+    if debug:
+        logger.info("Debug mode enabled")
+
     # initialize sampler to problem
     sampler.initialize(problem=problem, x0=x0)
 
@@ -70,10 +76,17 @@ def sample(
     logger.info("Elapsed time: "+str(t_elapsed))
 
     # extract results
-    sampler_result = sampler.get_samples()
+    sampler_result = sampler.get_samples(debug=debug)
 
     # record time
     sampler_result.time = t_elapsed
+
+    # debugging
+    sampler_result.debug = debug
+
+    if debug:
+        # chain acceptance rate
+        sampler_result.cum_chain_acceptance_rate = sampler_result.cum_accepted_samples/n_samples
 
     # record results
     result.sample_result = sampler_result

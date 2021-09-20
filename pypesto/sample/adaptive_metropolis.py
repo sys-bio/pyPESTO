@@ -1,9 +1,10 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union, Sequence
 import numpy as np
 import numbers
 
 from ..problem import Problem
 from .metropolis import MetropolisSampler
+from .result import McmcPtResult
 
 
 class AdaptiveMetropolisSampler(MetropolisSampler):
@@ -17,9 +18,11 @@ class AdaptiveMetropolisSampler(MetropolisSampler):
         self._mean_hist = None
         self._cov_hist = None
         self._cov_scale = None
+        self.covariance_scale_history: Union[Sequence[float], None] = None
+        self.covariance_history: Union[Sequence[np.ndarray], None] = None
 
     @classmethod
-    def default_options(cls):
+    def default_options(cls) -> Dict:
         return {
             # controls adaptation degeneration velocity of the proposals
             # in [0, 1], with 0 -> no adaptation, i.e. classical
@@ -55,6 +58,8 @@ class AdaptiveMetropolisSampler(MetropolisSampler):
         self._mean_hist = self.trace_x[-1]
         self._cov_hist = self._cov
         self._cov_scale = 1.
+        self.covariance_history = [self._cov_hist]
+        self.covariance_scale_history = [self._cov_scale]
 
     def _propose_parameter(self, x: np.ndarray):
         x_new = np.random.multivariate_normal(x, self._cov)
@@ -74,10 +79,16 @@ class AdaptiveMetropolisSampler(MetropolisSampler):
             n_cur_sample=max(n_sample_cur + 1, threshold_sample),
             decay_constant=decay_constant)
 
+        # record historical covariance
+        self.covariance_history.append(self._cov_hist)
+
         # compute covariance scaling factor
         self._cov_scale *= np.exp(
             (np.exp(log_p_acc) - target_acceptance_rate)
             / np.power(n_sample_cur + 1, decay_constant))
+
+        # record covariance scaling factor
+        self.covariance_scale_history.append(self._cov_scale)
 
         # set proposal covariance
         # TODO check publication
@@ -86,6 +97,27 @@ class AdaptiveMetropolisSampler(MetropolisSampler):
         # regularize proposal covariance
         self._cov = regularize_covariance(
             cov=self._cov, reg_factor=reg_factor)
+
+    def get_samples(self, debug: bool) -> McmcPtResult:
+        if not debug:
+            result = McmcPtResult(
+                trace_x=np.asarray([self.trace_x]),
+                trace_neglogpost=np.asarray([self.trace_neglogpost]),
+                trace_neglogprior=np.asarray([self.trace_neglogprior]),
+                betas=np.array([1.]),
+            )
+        else:
+            result = McmcPtResult(
+                trace_x=np.asarray([self.trace_x]),
+                trace_neglogpost=np.asarray([self.trace_neglogpost]),
+                trace_neglogprior=np.asarray([self.trace_neglogprior]),
+                betas=np.array([1.]),
+                cum_accepted_samples=np.array([
+                    np.cumsum(self.accepted_samples)]),
+                covariance_scale_history=np.asarray(self.covariance_scale_history),
+                covariance_history=np.asarray(self.covariance_history),
+            )
+        return result
 
 
 def update_history_statistics(

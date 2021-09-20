@@ -22,9 +22,10 @@ class MetropolisSampler(InternalSampler):
         self.trace_neglogpost: Union[Sequence[float], None] = None
         self.trace_neglogprior: Union[Sequence[float], None] = None
         self.temper_lpost: bool = False
+        self.cum_accepted_samples: Union[Sequence[int], None] = None
 
     @classmethod
-    def default_options(cls):
+    def default_options(cls) -> Dict:
         return {
             'std': 1.,  # the proposal standard deviation
             'show_progress': True,  # whether to show the progress
@@ -41,6 +42,7 @@ class MetropolisSampler(InternalSampler):
         self.trace_x = [x0]
         self.trace_neglogpost = [self.neglogpost(x0)]
         self.trace_neglogprior = [self.neglogprior(x0)]
+        self.accepted_samples = [0]
 
     def sample(self, n_samples: int, beta: float = 1.):
         # load last recorded particle
@@ -53,19 +55,21 @@ class MetropolisSampler(InternalSampler):
         # loop over iterations
         for _ in tqdm(range(int(n_samples)), disable=not show_progress):
             # perform step
-            x, lpost, lprior = self._perform_step(
+            x, lpost, lprior, accepted = self._perform_step(
                 x=x, lpost=lpost, lprior=lprior, beta=beta)
             # record step
             self.trace_x.append(x)
             self.trace_neglogpost.append(-lpost)
             self.trace_neglogprior.append(-lprior)
+            self.accepted_samples.append(accepted)
 
     def make_internal(self, temper_lpost: bool):
         self.options['show_progress'] = False
         self.temper_lpost = temper_lpost
 
     def _perform_step(self, x: np.ndarray, lpost: np.ndarray,
-                      lprior: np.ndarray, beta: float):
+                      lprior: np.ndarray, beta: float,
+                      accepted: int = 0):
         """
         Perform a step: Propose new parameter, evaluate and check whether to
         accept.
@@ -106,6 +110,8 @@ class MetropolisSampler(InternalSampler):
 
         # check acceptance
         if np.log(u) < log_p_acc:
+            accepted = 1
+
             # update particle
             x = x_new
             lpost = lpost_new
@@ -115,7 +121,7 @@ class MetropolisSampler(InternalSampler):
         self._update_proposal(x, lpost,
                               log_p_acc, len(self.trace_neglogpost)+1)
 
-        return x, lpost, lprior
+        return x, lpost, lprior, accepted
 
     def _propose_parameter(self, x: np.ndarray):
         """Propose a step."""
@@ -138,11 +144,21 @@ class MetropolisSampler(InternalSampler):
         self.trace_neglogpost[-1] = - sample.lpost
         self.trace_neglogprior[-1] = - sample.lprior
 
-    def get_samples(self) -> McmcPtResult:
-        result = McmcPtResult(
-            trace_x=np.array([self.trace_x]),
-            trace_neglogpost=np.array([self.trace_neglogpost]),
-            trace_neglogprior=np.array([self.trace_neglogprior]),
-            betas=np.array([1.]),
-        )
+    def get_samples(self, debug: bool) -> McmcPtResult:
+        if not debug:
+            result = McmcPtResult(
+                trace_x=np.asarray([self.trace_x]),
+                trace_neglogpost=np.asarray([self.trace_neglogpost]),
+                trace_neglogprior=np.asarray([self.trace_neglogprior]),
+                betas=np.array([1.]),
+            )
+        else:
+            result = McmcPtResult(
+                trace_x=np.asarray([self.trace_x]),
+                trace_neglogpost=np.asarray([self.trace_neglogpost]),
+                trace_neglogprior=np.asarray([self.trace_neglogprior]),
+                betas=np.array([1.]),
+                cum_accepted_samples=np.array([
+                    np.cumsum(self.accepted_samples)])
+            )
         return result

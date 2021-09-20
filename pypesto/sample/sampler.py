@@ -45,8 +45,16 @@ class Sampler(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_samples(self) -> McmcPtResult:
-        """Get the generated samples."""
+    def get_samples(self,
+                    debug: bool) -> McmcPtResult:
+        """Get the generated samples.
+
+        Parameters
+        ----------
+        debug:
+            Whether to return additional information
+            from the Markov chain.
+        """
 
     @classmethod
     def default_options(cls) -> Dict:

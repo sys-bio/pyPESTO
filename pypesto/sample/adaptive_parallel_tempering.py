@@ -18,7 +18,7 @@ class AdaptiveParallelTemperingSampler(ParallelTemperingSampler):
 
         return options
 
-    def adjust_betas(self, i_sample: int, swapped: Sequence[bool]):
+    def adjust_betas(self, i_sample: int, swapped: np.ndarray):
         """Update temperatures as in Vousden2016."""
         if len(self.betas) == 1:
             return
@@ -27,9 +27,6 @@ class AdaptiveParallelTemperingSampler(ParallelTemperingSampler):
         nu = self.options['nu']
         eta = self.options['eta']
         betas = self.betas
-
-        # booleans to integer array
-        swapped = np.array([int(swap) for swap in swapped])
 
         # update betas
         kappa = nu / (i_sample + 1 + nu) / eta

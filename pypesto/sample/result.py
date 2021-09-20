@@ -23,11 +23,27 @@ class McmcPtResult(dict):
     time: [n_chain]
         The computation time.
     auto_correlation: [n_chain]
-        The estimated chain autcorrelation.
+        The estimated chain autocorrelation.
     effective_sample_size: [n_chain]
         The estimated effective sample size.
     message: str
         Textual comment on the profile result.
+    debug: bool
+        Whether to store additional information.
+    cumulative_chain_acceptance_rate: np.ndarray
+        The cumulative acceptance rate of the chains.
+    swap_acceptance_rate: np.ndarray
+        The acceptance rate of swaps between
+        tempered chains.
+    covariance_scaling_history: np.ndarray
+        The scaling factor of the single-chain proposal
+        covariance matrices, which is adapted to
+        accomplish an overall 23% acceptance rate.
+    covariance_history: np.ndarray
+        Single-chain proposal covariance matrix.
+    temperatures: np.ndarray
+        The temperatures of all tempered chains.
+        This is the inverse of `betas`.
 
     Here, `n_chain` denotes the number of chains, `n_iter` the number of
     iterations (i.e., the chain length), and `n_par` the number of parameters.
@@ -42,7 +58,15 @@ class McmcPtResult(dict):
                  time: float = 0.,
                  auto_correlation: float = None,
                  effective_sample_size: float = None,
-                 message: str = None):
+                 message: str = None,
+                 debug: bool = False,
+                 cum_chain_acceptance_rate: np.ndarray = None,
+                 cum_accepted_samples: np.ndarray = None,
+                 accepted_swaps: np.ndarray = None,
+                 swap_acceptance_rate: float = None,
+                 covariance_scale_history: np.ndarray = None,
+                 covariance_history: np.ndarray = None,
+                 temperatures: np.ndarray = None):
         super().__init__()
 
         self.trace_x = trace_x
@@ -51,9 +75,18 @@ class McmcPtResult(dict):
         self.betas = betas
         self.burn_in = burn_in
         self.time = time
+        self.debug = debug
         self.auto_correlation = auto_correlation
         self.effective_sample_size = effective_sample_size
         self.message = message
+        # additional for debugging
+        self.cum_chain_acceptance_rate = cum_chain_acceptance_rate
+        self.cum_accepted_samples = cum_accepted_samples
+        self.accepted_swaps = accepted_swaps
+        self.swap_acceptance_rate = swap_acceptance_rate
+        self.covariance_scale_history = covariance_scale_history
+        self.covariance_history = covariance_history
+        self.temperatures = temperatures
 
         if trace_x.ndim != 3:
             raise ValueError(f"trace_x.ndim not as expected: {trace_x.ndim}")
