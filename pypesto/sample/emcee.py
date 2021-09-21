@@ -112,7 +112,7 @@ class EmceeSampler(Sampler):
         self.state = self.sampler.run_mcmc(
             self.state, n_samples, **self.run_args)
 
-    def get_samples(self) -> McmcPtResult:
+    def get_samples(self, debug: bool) -> McmcPtResult:
         # all walkers are concatenated, yielding a flat array
         trace_x = np.array([self.sampler.get_chain(flat=True)])
         trace_neglogpost = np.array([- self.sampler.get_log_prob(flat=True)])

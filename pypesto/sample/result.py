@@ -29,21 +29,27 @@ class McmcPtResult(dict):
     message: str
         Textual comment on the profile result.
     debug: bool
-        Whether to store additional information.
-    cumulative_chain_acceptance_rate: np.ndarray
+        Whether to return additional information
+        from the Markov chain.
+    cum_chain_acceptance_rate: [n_chain, n_iter]
         The cumulative acceptance rate of the chains.
-    swap_acceptance_rate: np.ndarray
+    cum_accepted_samples: [n_chain, n_iter]
+        The cumulative accepted samples of the chains.
+    accepted_swaps: [n_chain-1, n_iter]
+        The number of accepted swaps between
+        tempered chains.
+    swap_acceptance_rate: [n_chain-1]
         The acceptance rate of swaps between
         tempered chains.
-    covariance_scaling_history: np.ndarray
+    covariance_scale_history: np.ndarray
         The scaling factor of the single-chain proposal
         covariance matrices, which is adapted to
         accomplish an overall 23% acceptance rate.
     covariance_history: np.ndarray
         Single-chain proposal covariance matrix.
-    temperatures: np.ndarray
-        The temperatures of all tempered chains.
-        This is the inverse of `betas`.
+    temperatures: [n_chain, n_iter]
+        The temperatures of all tempered chains
+        across all samples in the Markov chain.
 
     Here, `n_chain` denotes the number of chains, `n_iter` the number of
     iterations (i.e., the chain length), and `n_par` the number of parameters.
@@ -63,7 +69,7 @@ class McmcPtResult(dict):
                  cum_chain_acceptance_rate: np.ndarray = None,
                  cum_accepted_samples: np.ndarray = None,
                  accepted_swaps: np.ndarray = None,
-                 swap_acceptance_rate: float = None,
+                 swap_acceptance_rate: np.ndarray = None,
                  covariance_scale_history: np.ndarray = None,
                  covariance_history: np.ndarray = None,
                  temperatures: np.ndarray = None):

@@ -110,9 +110,11 @@ class ParallelTemperingSampler(Sampler):
             cum_accepted_samples = np.array([result.cum_accepted_samples[0]
                                              for result in results])
             # total number of proposed swaps
-            n_proposed_swaps = len(self.accepted_swaps)*len(self.accepted_swaps[0])
+            n_proposed_swaps = len(self.accepted_swaps)
+
             # total number of accepted swaps
-            n_acc_swaps = float(np.sum(np.asarray(self.accepted_swaps)))
+            n_acc_swaps = np.sum(self.accepted_swaps, axis=0)
+
             # calculate swap acceptance rate
             self.swap_acceptance_rate = n_acc_swaps/n_proposed_swaps
 
@@ -124,8 +126,8 @@ class ParallelTemperingSampler(Sampler):
                 cum_accepted_samples=cum_accepted_samples,
                 covariance_scale_history=covariance_scale_history,
                 covariance_history=covariance_history,
-                temperatures=np.asarray(self.temperatures),
-                accepted_swaps=np.asarray(self.accepted_swaps),
+                temperatures=np.transpose(self.temperatures),
+                accepted_swaps=np.transpose(self.accepted_swaps),
                 swap_acceptance_rate=self.swap_acceptance_rate
             )
 

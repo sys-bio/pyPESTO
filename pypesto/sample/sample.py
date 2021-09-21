@@ -7,6 +7,8 @@ from ..problem import Problem
 from ..result import Result
 from .sampler import Sampler
 from .adaptive_metropolis import AdaptiveMetropolisSampler
+from .pymc3 import Pymc3Sampler
+from .emcee import EmceeSampler
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +67,13 @@ def sample(
 
     if debug:
         logger.info("Debug mode enabled")
+        for sampler_type in [EmceeSampler, Pymc3Sampler]:
+            if type(sampler) is sampler_type:
+                logger.warning(f'Debug mode not implemented '
+                               f'for {sampler_type}.\n'
+                               f'Automatically switching off '
+                               f'debug mode and continue.')
+                debug = False
 
     # initialize sampler to problem
     sampler.initialize(problem=problem, x0=x0)
@@ -81,12 +90,13 @@ def sample(
     # record time
     sampler_result.time = t_elapsed
 
-    # debugging
+    # record debugging status
     sampler_result.debug = debug
 
     if debug:
-        # chain acceptance rate
-        sampler_result.cum_chain_acceptance_rate = sampler_result.cum_accepted_samples/n_samples
+        # calculate and record chain acceptance rate
+        sampler_result.cum_chain_acceptance_rate = \
+            sampler_result.cum_accepted_samples/n_samples
 
     # record results
     result.sample_result = sampler_result

@@ -101,7 +101,7 @@ class Pymc3Sampler(Sampler):
         self.trace = trace
         self.data = data
 
-    def get_samples(self) -> McmcPtResult:
+    def get_samples(self, debug: bool) -> McmcPtResult:
         # parameter values
         trace_x = np.asarray(
             self.data.posterior.to_array()).transpose((1, 2, 0))
