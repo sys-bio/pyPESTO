@@ -94,9 +94,9 @@ def sample(
     sampler_result.debug = debug
 
     if debug:
-        # calculate and record chain acceptance rate
+        # calculate and record cumulative chain acceptance rate
         sampler_result.cum_chain_acceptance_rate = \
-            sampler_result.cum_accepted_samples/n_samples
+            sampler_result.cum_accepted_samples/(np.arange(n_samples) + 1)
 
     # record results
     result.sample_result = sampler_result
