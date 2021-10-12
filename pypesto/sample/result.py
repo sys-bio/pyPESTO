@@ -46,6 +46,8 @@ class McmcPtResult(dict):
         covariance matrices, which is adapted to
         accomplish an overall 23% acceptance rate.
     covariance_history: np.ndarray
+        Single-chain proposal covariance matrix history.
+    covariance: np.ndarray
         Single-chain proposal covariance matrix.
     temperatures: [n_chain, n_iter]
         The temperatures of all tempered chains
@@ -72,6 +74,7 @@ class McmcPtResult(dict):
                  swap_acceptance_rate: np.ndarray = None,
                  covariance_scale_history: np.ndarray = None,
                  covariance_history: np.ndarray = None,
+                 covariance: np.ndarray = None,
                  temperatures: np.ndarray = None):
         super().__init__()
 
@@ -92,6 +95,7 @@ class McmcPtResult(dict):
         self.swap_acceptance_rate = swap_acceptance_rate
         self.covariance_scale_history = covariance_scale_history
         self.covariance_history = covariance_history
+        self.covariance = covariance
         self.temperatures = temperatures
 
         if trace_x.ndim != 3:

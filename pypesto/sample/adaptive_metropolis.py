@@ -20,6 +20,7 @@ class AdaptiveMetropolisSampler(MetropolisSampler):
         self._cov_scale = None
         self.covariance_scale_history: Union[Sequence[float], None] = None
         self.covariance_history: Union[Sequence[np.ndarray], None] = None
+        self.covariance: Union[Sequence[np.ndarray], None] = None
 
     @classmethod
     def default_options(cls) -> Dict:
@@ -59,6 +60,7 @@ class AdaptiveMetropolisSampler(MetropolisSampler):
         self._cov_hist = self._cov
         self._cov_scale = 1.
         self.covariance_history = [self._cov_hist]
+        self.covariance = [self._cov]
         self.covariance_scale_history = [self._cov_scale]
 
     def _propose_parameter(self, x: np.ndarray):
@@ -98,6 +100,9 @@ class AdaptiveMetropolisSampler(MetropolisSampler):
         self._cov = regularize_covariance(
             cov=self._cov, reg_factor=reg_factor)
 
+        # record proposal covariance
+        self.covariance.append(self._cov)
+
     def get_samples(self, debug: bool) -> McmcPtResult:
         if not debug:
             result = McmcPtResult(
@@ -116,6 +121,7 @@ class AdaptiveMetropolisSampler(MetropolisSampler):
                     np.cumsum(self.accepted_samples)]),
                 covariance_scale_history=np.asarray(self.covariance_scale_history),
                 covariance_history=np.asarray(self.covariance_history),
+                covariance=np.asarray(self.covariance),
             )
         return result
 
