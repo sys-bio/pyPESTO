@@ -584,15 +584,14 @@ class DlibOptimizer(Optimizer):
 
 
 class PygmoOptimizer(Optimizer):
-    """ Pygmo optimizer family """
-    
+    """Pygmo optimizer family."""
+
     def __init__(self, options: Dict = None):
         super().__init__()
-    
         if options is None:
-            options = {'maxiter': 200, 'solver' : 'slsqp', 'family' : 'nlopt'}
+            options = {'maxiter': 200, 'solver': 'slsqp', 'family': 'nlopt'}
         self.options = options
-    
+
     @fix_decorator
     @time_decorator
     @history_decorator
@@ -606,48 +605,41 @@ class PygmoOptimizer(Optimizer):
         """Perform optimization. Parameters see `Optimizer` documentation."""
         lb = problem.lb
         ub = problem.ub
-        
         if pygmo is None:
             raise ImportError(
                 "This optimizer requires and installation of pygmo. You can "
                 "install pygmo via `pip install pygmo."
             )
-        
-        check_finite_bounds(lb, ub)
 
+        check_finite_bounds(lb, ub)
         uda = None
-        if options.family == 'nlopt':
-            uda = pygmo.nlopt(solver)
+        if self.options.family == 'nlopt':
+            uda = pygmo.nlopt(self.options.solver)
         else:
-            raise("Currently only nlopt family of optimizers implemented for pymgo")
-        
+            pass
+            # TODO: add other optimizers as well
         algo = pygmo.algorithm(uda)
-        algo.extract(pg.nlopt).ftol_rel = 1e-8
-        if options.disp:
+        algo.extract(pygmo.nlopt).ftol_rel = 1e-8
+        if self.options.disp:
             algo.set_verbosity(1)
 
         class PygmoProblem:
             def fitness(self, x):
                 return problem.objective.get_fval
+
             def get_bounds(self):
                 return [lb, ub]
-        
         pygmoProblem = pygmo.problem(PygmoProblem())
-        
-        pop = pygmo.population(prob, size = 1)
-        pop.problem.c_tol = [1e-8] * prob.get_nc()
-        
+        pop = pygmo.population(pygmoProblem, size = 1)
+        pop.problem.c_tol = [1e-8] * pygmoProblem.get_nc()
         pop = algo.evolve(pop)
-
-        log = algo.extract(pygmo.nlopt).get_log()
-        
+        line = algo.extract(pygmo.nlopt).get_log()
         # TODO: How to get parameter values after optimization?
         x = np.empty(len(line[1]))
         optimizer_result = OptimizerResult(
             x=x,
             fval=line[1]
         )
-
         return optimizer_result
 
     def is_least_squares(self):
@@ -662,7 +654,7 @@ class PyswarmOptimizer(Optimizer):
         super().__init__()
 
         if options is None:
-            options = {'maxiter': 200, 'solver' : "slsqp"}
+            options = {'maxiter': 200}
         self.options = options
 
     @fix_decorator
