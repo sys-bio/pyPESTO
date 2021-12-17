@@ -186,6 +186,7 @@ class NegLogStatePriors(ObjectiveBase):
 
         self.model = model
         self.solver = amici_solver
+        self.rdata = None
 
         self.time_points = time_points
         self.model.setTimepoints(time_points)
@@ -244,6 +245,7 @@ class NegLogStatePriors(ObjectiveBase):
             if 1 in sensi_orders:
                 res[GRAD] -= prior['fun_dx'](x, trajectory, s_trajectory)
 
+        self.rdata = rdata
         return res
 
     def check_mode(self, mode) -> bool:
@@ -606,8 +608,10 @@ def _get_gaussian_process_densities(time_points: np.array,
         (CAUTION: Here only the trajectory for a specific state
         (i.e. TODO) should be given.)
         """
+
         return -1/2 * np.sqrt((2*np.pi)**n_t * det_cov) - \
                1/2 * np.dot(inv_cov.dot((trajectory-mu)), trajectory-mu)
+
 
     def d_log_f_dx(x,
                    trajectory:np.array,
