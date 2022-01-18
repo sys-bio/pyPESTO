@@ -5,6 +5,7 @@ from ..engine import Engine, SingleCoreEngine
 from ..optimize import Optimizer
 from ..problem import Problem
 from ..result import Result
+from ..optimize.util import autosave
 from .profile_next_guess import next_guess
 from .options import ProfileOptions
 from .util import initialize_profile
@@ -22,10 +23,12 @@ def parameter_profile(
         profile_list: int = None,
         result_index: int = 0,
         next_guess_method: Union[Callable, str] = 'adaptive_step_regression',
-        profile_options: ProfileOptions = None
+        profile_options: ProfileOptions = None,
+        progress_bar: bool = True,
+        filename: str = "Auto"
 ) -> Result:
     """
-    This is the main function to call to do parameter profiling.
+    Call to do parameter profiling.
 
     Parameters
     ----------
@@ -55,6 +58,13 @@ def parameter_profile(
         optimization in profiling.
     profile_options:
         Various options applied to the profile optimization.
+    progress_bar:
+        Whether to display a progress bar.
+    filename:
+        Name of the hdf5 file, where the result will be saved. Default is
+        "Auto", in which case it will automatically generate a file named
+        `year_month_day_profiling_result.hdf5`. Deactivate saving by
+        setting filename to `None`.
 
     Returns
     -------
@@ -115,11 +125,15 @@ def parameter_profile(
         tasks.append(task)
 
     # execute the tasks with Engine
-    indexed_profiles = engine.execute(tasks)
+    indexed_profiles = engine.execute(tasks, progress_bar=progress_bar)
 
     # fill in the ProfilerResults at the right index
     for indexed_profile in indexed_profiles:
         result.profile_result.list[-1][indexed_profile['index']] = \
             indexed_profile['profile']
+
+    autosave(filename=filename,
+             result=result,
+             type="profiling")
 
     return result

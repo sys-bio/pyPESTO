@@ -1,3 +1,4 @@
+# noqa: D400,D205
 """
 Optimize
 ========
@@ -15,8 +16,11 @@ from .optimizer import (
     DlibOptimizer,
     PyswarmOptimizer,
     CmaesOptimizer,
+    PyswarmsOptimizer,
     ScipyDifferentialEvolutionOptimizer,
     NLoptOptimizer,
     FidesOptimizer,
+    read_result_from_file,
+    read_results_from_file
 )
 from .result import OptimizerResult

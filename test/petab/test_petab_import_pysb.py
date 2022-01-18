@@ -15,7 +15,7 @@ import petabtests
 
 # In CI, bionetgen is install here
 BNGPATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'BioNetGen-2.3.2'))
+    os.path.join(os.path.dirname(__file__), '..', '..', 'BioNetGen-2.6.0'))
 if 'BNGPATH' not in os.environ:
     logging.warning(f"Env var BNGPATH was not set. Setting to {BNGPATH}")
     os.environ['BNGPATH'] = BNGPATH
@@ -42,7 +42,7 @@ def test_petab_pysb_optimization():
 
     optimizer = optimize.ScipyOptimizer()
     result = optimize.minimize(problem=problem, optimizer=optimizer,
-                               n_starts=10)
+                               n_starts=10, filename=None)
     fvals = np.array(result.optimize_result.get_for_key('fval'))
 
     # ensure objective after optimization is not worse than for true parameters

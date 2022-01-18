@@ -6,6 +6,155 @@ Release notes
 ..........
 
 
+0.2.9 (2021-11-03)
+------------------
+
+* General:
+    * Automatically save results (#749)
+    * Update all docstrings to numpy standard (#750)
+    * Add Google Colab and nbviewer links to all notebooks for online
+      execution (#758)
+    * Option to not save hess and sres in result (#760)
+    * Set minimum supported python version to 3.7 (#755)
+
+* Visualization:
+    * Parameterize start index in optimized model fit (#744)
+
+
+0.2.8 (2021-10-28)
+------------------
+
+* PEtab:
+    * Use correct measurement column name in `rdatas_to_simulation_df` (#721)
+    * Visualize optimized model fit via PEtab problem (#725)
+    * Un-ignore observable scaling tests (#742)
+    * New function to plot model trajectory with custom time points (#739)
+
+* Optimization:
+    * OOD Refactor startpoint generation (#732)
+    * Update to fides 0.6.0 (#733)
+    * Correctly report FVAL vs CHI2 values in fides (#741)
+
+* Ensemble:
+    * Option for using weighted ensemble means (#702)
+    * Default names and bounds for `Ensemble.from_sample` (#730)
+
+* Storage:
+    * Load optimization result from HDF5 history (#726)
+
+* General:
+    * Enable use of priors with least squares optimizers (#745)
+    * Add temporary CITATION.cff file (#734)
+    * Regular scheduled CI runs (#754)
+    * Allow to not copy objective in problem (#756)
+
+* Fixes:
+    * Fix non-exported visualization in notebook (#729)
+    * Mark some more tests as flaky (#704)
+    * Fix minor data type and OOD issues in parameter and waterfall plots
+      (#731)
+
+
+0.2.7 (2021-07-30)
+------------------
+
+* Finite Differences:
+    * Adaptive finite differences (#671)
+    * Add helper function for checking gradients of objectives (#690)
+    * Small bug fixes (#711, #714)
+
+* Storage:
+    * Store representation of the objective (#669)
+    * Minor fixes in HDF5 history (#679)
+    * HDF5 reader for ensemble predictions (#681)
+    * Update storage demo jupyter notebook (#699)
+    * Option to trim trace to be monotonically decreasing (#705)
+
+* General:
+    * Improved tests and bug fixes of validation intervals (#676, #685)
+    * Add input file validation via PEtab linter for PEtab import (#678)
+    * Remove default values from docstring (#680)
+    * Minor fixes/improvements of ensembles (#687, #688)
+    * Fix sorting of optimization values including `NaN` values (#691)
+    * Specify axis limits for plotting (#693)
+    * Minor fixes in visualization (#696)
+    * Add installation option `all_optimizers` (#695)
+    * Improve installation documentation (#689)
+    * Update `pysb` and `BNG` version on GitHub Actions (#697)
+    * Bug fix in steady state guesses (#715)
+
+
+0.2.6 (2021-05-17)
+------------------
+
+* Objective:
+    * Basic finite differences (#666)
+    * Fix factor 2 in res/fval values (#619)
+
+* Optimization:
+    * Sort optimization results when appending (#668)
+    * Read optimizer result from HDF5 (previously only CSV) (#663)
+
+* Storage:
+    * Load ensemble from HDF5 (#640)
+
+* CI:
+    * Add flake8 checks as pre-commit hook (#662)
+    * Add efficient biological conversion reaction test model (#619)
+
+* General:
+    * No automatic import of the predict module (#657)
+    * Assert unique problem parameter names (#665)
+    * Load ensemble from optimization result with and without history usage
+      (#640)
+    * Calculate validation profile significance (#658)
+    * Set pypesto screen logger to "INFO" by default (#667)
+
+* Minor fixes:
+    * Fix axis variable overwriting in `visualize.sampling_parameter_traces`
+      (#665)
+
+
+0.2.5 (2021-05-04)
+------------------
+
+* Objectives:
+    * New Aesara objectve (#623, #629, #635)
+
+* Sampling:
+    * New Emcee sampler (#606)
+    * Fix compatibility to new Theano version (#650)
+
+* Storage:
+    * Improve hdf5 storage documentation (#612)
+    * Hdf5 history for MultiProcessEngine (#650)
+    * Minor fixes (#637, #638, #645, #649)
+
+* Visualization:
+    * Fix bounds of parameter plots (#601)
+    * Fix waterfall plots with multiple results (#611)
+
+* CI:
+    * Move CI tests on GitHub Actions to python 3.9 (#598)
+    * Add issue template (#604)
+    * Update BionetGen Link (#630)
+    * Introduce project.toml (#634)
+
+* General:
+    * Introduce progress bar for optimization, profiles and ensembles (#641)
+    * Extend gradient checking functionality (#644)
+
+* Minor fixes:
+    * Fix installation of ipopt (#599)
+    * Fix Zenodo link (#601)
+    * Fix duplicates in documentation (#603)
+    * Fix least squares optimizers (#617 #631 #632)
+    * Fix trust region options (#616)
+    * Fix slicing for new AMICI release (#621)
+    * Refactor and document latin hypercube sampling (#647)
+    * Fix missing SBML name in PEtab import (#648)
+
+
 0.2.4 (2021-03-12)
 ------------------
 

@@ -13,21 +13,17 @@ def assign_clusters(vals):
 
     Parameters
     ----------
-
     vals: numeric list or array
         List to be clustered.
 
     Returns
     -------
-
     clust: numeric list
-         Indicating the corresponding cluster of each element from
-         'vals'.
-
+        Indicating the corresponding cluster of each element from
+        'vals'.
     clustsize: numeric list
         Size of clusters, length equals number of clusters.
     """
-
     # sanity checks
     if vals is None or len(vals) == 0:
         return [], []
@@ -65,24 +61,19 @@ def assign_clustered_colors(vals, balance_alpha=True, highlight_global=True):
 
     Parameters
     ----------
-
     vals: numeric list or array
         List to be clustered and assigned colors.
-
     balance_alpha: bool (optional)
         Flag indicating whether alpha for large clusters should be reduced to
         avoid overplotting (default: True)
-
     highlight_global: bool (optional)
         flag indicating whether global optimum should be highlighted
 
     Returns
     -------
-
     colors: list of RGBA
         One for each element in 'vals'.
     """
-
     # sanity checks
     if vals is None or len(vals) == 0:
         return []
@@ -150,7 +141,6 @@ def assign_colors(vals, colors=None, balance_alpha=True,
 
     Parameters
     ----------
-
     vals: numeric list or array
         List to be clustered and assigned colors.
 
@@ -166,11 +156,9 @@ def assign_colors(vals, colors=None, balance_alpha=True,
 
     Returns
     -------
-
     colors: list of RGBA
         One for each element in 'vals'.
     """
-
     # sanity checks
     if vals is None or len(vals) == 0:
         return np.array([])
@@ -195,19 +183,21 @@ def assign_colors(vals, colors=None, balance_alpha=True,
         if colors.ndim == 2:
             colors = colors[0]
         return np.array([colors] * n_vals)
-    else:
-        if colors.shape[1] == 4 and n_vals == colors.shape[0]:
-            return colors
-        elif colors.shape[0] == 4:
-            colors = np.transpose(colors)
-            if n_vals == colors.shape[0]:
-                return colors
 
-        # Shape of array did not match n_vals. Error due to size mismatch:
-        raise ('Incorrect color input. Colors must be specified either as '
-               'list of [r, g, b, alpha] with length equal to function '
-               'values Number of function (here: ' + str(n_vals) + '), or as '
-               'one single [r, g, b, alpha] color.')
+    if colors.shape[1] == 4 and n_vals == colors.shape[0]:
+        return colors
+
+    if colors.shape[0] == 4:
+        colors = np.transpose(colors)
+        if n_vals == colors.shape[0]:
+            return colors
+
+    # Shape of array did not match n_vals. Error due to size mismatch:
+    raise ValueError(
+        'Incorrect color input. Colors must be specified either as '
+        'list of `[r, g, b, alpha]` with length equal to that of `vals` '
+        f'(here: {n_vals}), or as a single `[r, g, b, alpha]`.'
+    )
 
 
 def assign_colors_for_list(
@@ -215,25 +205,23 @@ def assign_colors_for_list(
         colors: Optional[Union[RGBA, List[RGBA], np.ndarray]] = None
 ) -> Union[List[List[float]], np.ndarray]:
     """
-    Creates a list of colors for a list of items or checks
-    a user-provided list of colors and uses this if everything is ok
+    Create a list of colors for a list of items.
+
+    Can also check a user-provided list of colors and use this if
+    everything is ok.
 
     Parameters
     ----------
-
     num_entries:
         number of results in list
-
     colors:
         list of colors, or single color
 
     Returns
     -------
-
     colors:
         List of RGBA, one for each element in 'vals'.
     """
-
     # if the user did not specify any colors:
     if colors is None:
         # default colors will be used, on for each entry in the result list.
@@ -262,27 +250,23 @@ def delete_nan_inf(fvals: np.ndarray,
                    x: Optional[np.ndarray] = None,
                    xdim: Optional[int] = 1) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Delete nan and inf values in fvals. If parameters 'x' are passed, also
-    the corresponding entries are deleted.
+    Delete nan and inf values in fvals.
+
+    If parameters 'x' are passed, also the corresponding entries are deleted.
 
     Parameters
     ----------
-
     x:
         array of parameters
-
     fvals:
         array of fval
-
     xdim:
         dimension of x, in case x dimension cannot be inferred
 
     Returns
     -------
-
     x:
         array of parameters without nan or inf
-
     fvals:
         array of fval without nan or inf
     """

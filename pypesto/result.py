@@ -1,3 +1,4 @@
+# noqa: D400,D205
 """
 Result
 ======
@@ -8,6 +9,7 @@ optimization, profiling, sampling.
 
 """
 import pandas as pd
+import numpy as np
 import copy
 from typing import Sequence, TYPE_CHECKING
 
@@ -17,9 +19,7 @@ if TYPE_CHECKING:
 
 
 class OptimizeResult:
-    """
-    Result of the minimize() function.
-    """
+    """Result of the :py:func:`pypesto.optimize.minimize` function."""
 
     def __init__(self):
         self.list = []
@@ -36,22 +36,22 @@ class OptimizeResult:
         optimizer_result:
             The result of one (local) optimizer run.
         """
-
         self.list.append(optimizer_result)
+        self.sort()
 
     def sort(self):
-        """
-        Sort the optimizer results by function value fval (ascending).
-        """
+        """Sort the optimizer results by function value fval (ascending)."""
+        def get_fval(res):
+            return res.fval if not np.isnan(res.fval) else np.inf
 
-        self.list = sorted(self.list, key=lambda res: res.fval)
+        self.list = sorted(self.list, key=get_fval)
 
     def as_dataframe(self, keys=None) -> pd.DataFrame:
         """
-        Get as pandas DataFrame. If keys is a list,
-        return only the specified values.
-        """
+        Get as pandas DataFrame.
 
+        If keys is a list, return only the specified values, otherwise all.
+        """
         lst = self.as_list(keys)
 
         df = pd.DataFrame(lst)
@@ -60,15 +60,15 @@ class OptimizeResult:
 
     def as_list(self, keys=None) -> Sequence:
         """
-        Get as list. If keys is a list,
-        return only the specified values.
+        Get as list.
+
+        If keys is a list, return only the specified values.
 
         Parameters
         ----------
         keys: list(str), optional
             Labels of the field to extract.
         """
-
         lst = self.list
 
         if keys is not None:
@@ -77,10 +77,7 @@ class OptimizeResult:
         return lst
 
     def get_for_key(self, key) -> list:
-        """
-        Extract the list of values for the specified key as a list.
-        """
-
+        """Extract the list of values for the specified key as a list."""
         return [res[key] for res in self.list]
 
 
@@ -131,15 +128,16 @@ class ProfileResult:
             profiler_result: 'profile.ProfilerResult',
             i_par: int,
             profile_list: int = None) -> None:
-        """Write a profiler result to the result object at `i_par` of profile
-        list `profile_list`.
+        """
+        Write a profiler result to the result object.
 
         Parameters
         ----------
         profiler_result:
             The result of one (local) profiler run.
         i_par:
-            Integer specifying the parameter index.
+            Integer specifying the parameter index where to put
+            profiler_result.
         profile_list:
             Index specifying the profile list. Defaults to the last list.
         """
@@ -151,8 +149,7 @@ class ProfileResult:
             self, i_par: int, profile_list: int = None
     ):
         """
-        Get theprofiler result at parameter index `i_par` of profile list
-        `profile_list`.
+        Get the profiler result at parameter index `i_par` of `profile_list`.
 
         Parameters
         ----------
@@ -167,9 +164,7 @@ class ProfileResult:
 
 
 class SampleResult:
-    """
-    Result of the sample() function.
-    """
+    """Result of the sample() function."""
 
     def __init__(self):
         pass
@@ -178,24 +173,20 @@ class SampleResult:
 class Result:
     """
     Universal result object for pypesto.
+
     The algorithms like optimize, profile,
     sample fill different parts of it.
 
     Attributes
     ----------
-
     problem: pypesto.Problem
         The problem underlying the results.
-
     optimize_result:
         The results of the optimizer runs.
-
     profile_result:
         The results of the profiler run.
-
     sample_result:
         The results of the sampler run.
-
     """
 
     def __init__(self, problem=None):

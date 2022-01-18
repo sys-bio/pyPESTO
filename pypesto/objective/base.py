@@ -3,7 +3,7 @@ import pandas as pd
 import copy
 import logging
 import abc
-from typing import Dict, Iterable, Sequence, Tuple, Union
+from typing import Dict, Iterable, Optional, Sequence, Tuple, Union, List
 
 from .constants import MODE_FUN, MODE_RES, FVAL, GRAD, HESS, RES, SRES
 from .history import HistoryBase
@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 class ObjectiveBase(abc.ABC):
     """
+    Abstract objective class.
+
     The objective class is a simple wrapper around the objective function,
     giving a standardized way of calling. Apart from that, it manages several
     things including fixing of parameters and history.
@@ -27,78 +29,106 @@ class ObjectiveBase(abc.ABC):
     by this objective function. If maximization is to be performed, the sign
     should be flipped before creating the objective function.
 
+    Parameters
+    ----------
+    x_names:
+        Parameter names that can be optionally used in, e.g., history or
+        gradient checks.
+
     Attributes
     ----------
-
     history:
         For storing the call history. Initialized by the methods, e.g. the
         optimizer, in `initialize_history()`.
-
     pre_post_processor:
         Preprocess input values to and postprocess output values from
         __call__. Configured in `update_from_problem()`.
-
     """
 
-    def __init__(self,
-                 x_names: Sequence[str] = None):
+    def __init__(
+        self,
+        x_names: Optional[Sequence[str]] = None,
+    ):
 
-        self.x_names = x_names
+        self._x_names = x_names
 
         self.pre_post_processor = PrePostProcessor()
         self.history = HistoryBase()
 
     def __deepcopy__(self, memodict=None) -> 'ObjectiveBase':
+        """Create deepcopy of objective object."""
         other = type(self)()  # maintain type for derived classes
-        for attr in self.__dict__:
-            other.__dict__[attr] = copy.deepcopy(self.__dict__[attr])
+        for attr, val in self.__dict__.items():
+            other.__dict__[attr] = copy.deepcopy(val)
         return other
 
     # The following has_ properties can be used to find out what values
     # the objective supports.
     @property
     def has_fun(self) -> bool:
+        """Check whether function is defined."""
         return self.check_sensi_orders((0,), MODE_FUN)
 
     @property
     def has_grad(self) -> bool:
+        """Check whether gradient is defined."""
         return self.check_sensi_orders((1,), MODE_FUN)
 
     @property
     def has_hess(self) -> bool:
+        """Check whether Hessian is defined."""
         return self.check_sensi_orders((2,), MODE_FUN)
 
     @property
-    def has_hessp(self) -> bool:
+    def has_hessp(self) -> bool: # noqa
         # Not supported yet
         return False
 
     @property
     def has_res(self) -> bool:
+        """Check whether residuals are defined."""
         return self.check_sensi_orders((0,), MODE_RES)
 
     @property
     def has_sres(self) -> bool:
+        """Check whether residual sensitivities are defined."""
         return self.check_sensi_orders((1,), MODE_RES)
 
+    @property
+    def x_names(self) -> Union[List[str], None]:
+        """Parameter names."""
+        if self._x_names is None:
+            return self._x_names
+
+        # change from numpy array with `str_` dtype to list with `str` dtype
+        # to avoid issues when writing to hdf (and correctness of typehint)
+        return [
+            str(name) for name in
+            self.pre_post_processor.reduce(np.asarray(self._x_names))
+        ]
+
     def initialize(self):
-        """Initialize the objective function.
+        """
+        Initialize the objective function.
+
         This function is used at the beginning of an analysis, e.g.
         optimization, and can e.g. reset the objective memory.
         By default does nothing.
         """
 
     def __call__(
-            self,
-            x: np.ndarray,
-            sensi_orders: Tuple[int, ...] = (0, ),
-            mode: str = MODE_FUN,
-            return_dict: bool = False,
-            **kwargs
+        self,
+        x: np.ndarray,
+        sensi_orders: Tuple[int, ...] = (0, ),
+        mode: str = MODE_FUN,
+        return_dict: bool = False,
+        **kwargs,
     ) -> Union[float, np.ndarray, Tuple, ResultDict]:
         """
-        Method to obtain arbitrary sensitivities. This is the central method
-        which is always called, also by the get_* methods.
+        Obtain arbitrary sensitivities.
+
+        This is the central method which is always called, also by the
+        get_* methods.
 
         There are different ways in which an optimizer calls the objective
         function, and in how the objective function provides information
@@ -129,7 +159,8 @@ class ObjectiveBase(abc.ABC):
             with function values and derivatives indicated by ids.
         """
         # copy parameter vector to prevent side effects
-        x = np.array(x).copy()
+        # np.array creates a copy of x already
+        x = np.array(x)
 
         # check input
         if not self.check_mode(mode):
@@ -140,35 +171,36 @@ class ObjectiveBase(abc.ABC):
                              f"sensi_orders= {sensi_orders} and mode={mode}.")
 
         # pre-process
-        x_full = self.pre_post_processor.preprocess(x)
+        x_full = self.pre_post_processor.preprocess(x=x)
 
         # compute result
-        result = self.call_unprocessed(x_full, sensi_orders, mode, **kwargs)
+        result = self.call_unprocessed(
+            x=x_full, sensi_orders=sensi_orders, mode=mode, **kwargs)
 
         # post-process
-        result = self.pre_post_processor.postprocess(result)
+        result = self.pre_post_processor.postprocess(result=result)
 
         # update history
-        self.history.update(x, sensi_orders, mode, result)
+        self.history.update(
+            x=x, sensi_orders=sensi_orders, mode=mode, result=result)
 
         # map to output format
         if not return_dict:
-            result = ObjectiveBase.output_to_tuple(sensi_orders, mode,
-                                                   **result)
+            result = ObjectiveBase.output_to_tuple(
+                sensi_orders=sensi_orders, mode=mode, **result)
 
         return result
 
     @abc.abstractmethod
     def call_unprocessed(
-            self,
-            x: np.ndarray,
-            sensi_orders: Tuple[int, ...],
-            mode: str,
-            **kwargs
+        self,
+        x: np.ndarray,
+        sensi_orders: Tuple[int, ...],
+        mode: str,
+        **kwargs,
     ) -> ResultDict:
         """
-        Call objective function without pre- or post-processing and
-        formatting.
+        Call objective function without pre- or post-processing and formatting.
 
         Parameters
         ----------
@@ -186,11 +218,49 @@ class ObjectiveBase(abc.ABC):
         """
         raise NotImplementedError()
 
-    @abc.abstractmethod
-    def check_sensi_orders(self, sensi_orders, mode) -> bool:
+    def check_mode(self, mode: str) -> bool:
         """
-        Check if the objective is able to compute the requested
-        sensitivities.
+        Check if the objective is able to compute in the requested mode.
+
+        Either `check_mode` or the `fun_...` functions
+        must be overwritten in derived classes.
+
+        Parameters
+        ----------
+        mode:
+            Whether to compute function values or residuals.
+
+        Returns
+        -------
+        flag:
+            Boolean indicating whether mode is supported
+        """
+        if mode == MODE_FUN:
+            return self.has_fun
+        elif mode == MODE_RES:
+            return self.has_res
+        else:
+            raise ValueError(f"Unknown mode {mode}.")
+
+    def get_config(self) -> dict:
+        """
+        Get the configuration information of the objective function.
+
+        Return it as a dictonary.
+        """
+        info = {'type':  self.__class__.__name__}
+        return info
+
+    def check_sensi_orders(
+        self,
+        sensi_orders: Tuple[int, ...],
+        mode: str,
+    ) -> bool:
+        """
+        Check if the objective is able to compute the requested sensitivities.
+
+        Either `check_sensi_orders` or the `fun_...` functions
+        must be overwritten in derived classes.
 
         Parameters
         ----------
@@ -205,33 +275,41 @@ class ObjectiveBase(abc.ABC):
             Boolean indicating whether combination of sensi_orders and mode
             is supported
         """
-        raise NotImplementedError()
+        if not sensi_orders:
+            return True
 
-    @abc.abstractmethod
-    def check_mode(self, mode) -> bool:
-        """
-        Check if the objective is able to compute in the requested mode.
+        if (
+            mode == MODE_FUN
+            and (
+                0 in sensi_orders and not self.has_fun
+                or 1 in sensi_orders and not self.has_grad
+                or 2 in sensi_orders and not self.has_hess
+                or max(sensi_orders) > 2
+            )
+        ) or (
+            mode == MODE_RES
+            and (
+                0 in sensi_orders and not self.has_res
+                or 1 in sensi_orders and not self.has_sres
+                or max(sensi_orders) > 1
+            )
+        ):
+            return False
 
-        Parameters
-        ----------
-        mode:
-            Whether to compute function values or residuals.
-        Returns
-        -------
-        flag:
-            Boolean indicating whether mode is supported
-        """
-        raise NotImplementedError()
+        return True
 
     @staticmethod
     def output_to_tuple(
-            sensi_orders: Tuple[int, ...], mode: str,
-            **kwargs: Union[float, np.ndarray]
+        sensi_orders: Tuple[int, ...],
+        mode: str,
+        **kwargs: Union[float, np.ndarray],
     ) -> Tuple:
         """
-        Return values as requested by the caller, since usually only a subset
-        is demanded. One output is returned as-is, more than one output are
-        returned as a tuple in order (fval, grad, hess).
+        Return values as requested by the caller.
+
+        Usually only a subset of outputs is demanded. One output is returned
+        as-is, more than one output are returned as a tuple in order (fval,
+        grad, hess).
         """
         output = ()
         if mode == MODE_FUN:
@@ -252,52 +330,45 @@ class ObjectiveBase(abc.ABC):
 
     # The following are convenience functions for getting specific outputs.
     def get_fval(self, x: np.ndarray) -> float:
-        """
-        Get the function value at x.
-        """
+        """Get the function value at x."""
         fval = self(x, (0,), MODE_FUN)
         return fval
 
     def get_grad(self, x: np.ndarray) -> np.ndarray:
-        """
-        Get the gradient at x.
-        """
+        """Get the gradient at x."""
         grad = self(x, (1,), MODE_FUN)
         return grad
 
     def get_hess(self, x: np.ndarray) -> np.ndarray:
-        """
-        Get the Hessian at x.
-        """
+        """Get the Hessian at x."""
         hess = self(x, (2,), MODE_FUN)
         return hess
 
     def get_res(self, x: np.ndarray) -> np.ndarray:
-        """
-        Get the residuals at x.
-        """
+        """Get the residuals at x."""
         res = self(x, (0,), MODE_RES)
         return res
 
     def get_sres(self, x: np.ndarray) -> np.ndarray:
-        """
-        Get the residual sensitivities at x.
-        """
+        """Get the residual sensitivities at x."""
         sres = self(x, (1,), MODE_RES)
         return sres
 
     def update_from_problem(
-            self,
-            dim_full: int,
-            x_free_indices: Sequence[int],
-            x_fixed_indices: Sequence[int],
-            x_fixed_vals: Sequence[float]):
+        self,
+        dim_full: int,
+        x_free_indices: Sequence[int],
+        x_fixed_indices: Sequence[int],
+        x_fixed_vals: Sequence[float],
+    ):
         """
-        Handle fixed parameters. Later, the objective will be given parameter
-        vectors x of dimension dim, which have to be filled up with fixed
-        parameter values to form a vector of dimension dim_full >= dim.
-        This vector is then used to compute function value and derivatives.
-        The derivatives must later be reduced again to dimension dim.
+        Handle fixed parameters.
+
+        Later, the objective will be given parameter vectors x of dimension
+        dim, which have to be filled up with fixed parameter values to form
+        a vector of dimension dim_full >= dim. This vector is then used to
+        compute function value and derivatives. The derivatives must later
+        be reduced again to dimension dim.
 
         This is so as to make the fixing of parameters transparent to the
         caller.
@@ -319,7 +390,6 @@ class ObjectiveBase(abc.ABC):
             Vector of the same length as x_fixed_indices, containing the values
             of the fixed parameters.
         """
-
         pre_post_processor = FixedParametersProcessor(
             dim_full=dim_full,
             x_free_indices=x_free_indices,
@@ -329,13 +399,15 @@ class ObjectiveBase(abc.ABC):
         self.pre_post_processor = pre_post_processor
 
     def check_grad_multi_eps(
-            self,
-            *args,
-            multi_eps: Iterable = None,
-            label: str = 'rel_err',
-            **kwargs,
+        self,
+        *args,
+        multi_eps: Optional[Iterable] = None,
+        label: str = 'rel_err',
+        **kwargs,
     ):
         """
+        Compare gradient evaluation.
+
         Equivalent to the `ObjectiveBase.check_grad` method, except multiple
         finite difference step sizes are tested. The result contains the
         lowest finite difference for each parameter, and the corresponding
@@ -351,6 +423,12 @@ class ObjectiveBase(abc.ABC):
             Valid options are the column labels of the dataframe returned by
             the `ObjectiveBase.check_grad` method.
         """
+        if 'eps' in kwargs:
+            raise KeyError(
+                'Please use the `multi_eps` (not the `eps`) argument with '
+                '`check_grad_multi_eps` to specify step sizes.'
+            )
+
         if multi_eps is None:
             multi_eps = {1e-1, 1e-3, 1e-5, 1e-7, 1e-9}
 
@@ -375,17 +453,20 @@ class ObjectiveBase(abc.ABC):
         return combined_result
 
     def check_grad(
-            self,
-            x: np.ndarray,
-            x_indices: Sequence[int] = None,
-            eps: float = 1e-5,
-            verbosity: int = 1,
-            mode: str = MODE_FUN,
-            detailed: bool = False
+        self,
+        x: np.ndarray,
+        x_indices: Sequence[int] = None,
+        eps: float = 1e-5,
+        verbosity: int = 1,
+        mode: str = MODE_FUN,
+        order: int = 0,
+        detailed: bool = False,
     ) -> pd.DataFrame:
         """
-        Compare gradient evaluation: Firstly approximate via finite
-        differences, and secondly use the objective gradient.
+        Compare gradient evaluation.
+
+        Firstly approximate via finite differences, and secondly use the
+        objective gradient.
 
         Parameters
         ----------
@@ -403,6 +484,8 @@ class ObjectiveBase(abc.ABC):
         mode:
             Residual (MODE_RES) or objective function value (MODE_FUN)
             computation mode.
+        order:
+            Derivative order, either gradient (0) or Hessian (1).
         detailed:
             Toggle whether additional values are returned. Additional values
             are function values, and the central difference weighted by the
@@ -410,16 +493,15 @@ class ObjectiveBase(abc.ABC):
             mean).
 
         Returns
-        ----------
+        -------
         result:
             gradient, finite difference approximations and error estimates.
         """
-
         if x_indices is None:
             x_indices = list(range(len(x)))
 
         # function value and objective gradient
-        fval, grad = self(x, (0, 1), mode)
+        fval, grad = self(x, (0 + order, 1 + order), mode)
 
         grad_list = []
         fd_f_list = []
@@ -527,10 +609,79 @@ class ObjectiveBase(abc.ABC):
             data = {**prefix_data, **data, **postfix_data}
 
         # create dataframe
-        result = pd.DataFrame(data=data)
+        result = pd.DataFrame(
+            data=data,
+            index=[
+                self.x_names[ix] if self.x_names is not None
+                else f'x_{ix}' for ix in x_indices
+            ],
+        )
 
         # log full result
         if verbosity > 0:
             logger.info(result)
 
         return result
+
+    def check_gradients_match_finite_differences(
+        self,
+        *args,
+        x: np.ndarray = None,
+        x_free: Sequence[int] = None,
+        rtol: float = 1e-2,
+        atol: float = 1e-3,
+        mode: str = None,
+        order: int = 0,
+        multi_eps=None,
+        **kwargs,
+    ) -> bool:
+        """Check if gradients match finite differences (FDs).
+
+        Parameters
+        ----------
+        rtol: relative error tolerance
+        x: The parameters for which to evaluate the gradient
+        x_free: Indices for which to compute gradients
+        rtol: relative error tolerance
+        atol: absolute error tolerance
+        mode: function values or residuals
+        order: gradient order, 0 for gradient, 1 for hessian
+        multi_eps: multiple test step width for FDs
+
+        Returns
+        -------
+        bool
+            Indicates whether gradients match (True) FDs or not (False)
+        """
+        par = np.asarray(x)
+        if x_free is None:
+            free_indices = par
+        else:
+            free_indices = par[x_free]
+        dfs = []
+
+        if mode is None:
+            modes = [MODE_FUN, MODE_RES]
+        else:
+            modes = [mode]
+
+        if multi_eps is None:
+            multi_eps = np.array([10**(-i) for i in range(3, 9)])
+
+        for mode in modes:
+            try:
+                dfs.append(self.check_grad_multi_eps(
+                            free_indices, *args, **kwargs,
+                            mode=mode, multi_eps=multi_eps))
+            except (RuntimeError, ValueError):
+                # Might happen in case PEtab problem not well defined or
+                # fails for specified tolerances in forward sensitivities
+                return False
+
+        return all([
+            any([
+                np.all((mode_df.rel_err.values < rtol) |
+                       (mode_df.abs_err.values < atol)),
+            ])
+            for mode_df in dfs
+        ])

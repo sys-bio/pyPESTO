@@ -1,6 +1,4 @@
-"""
-This is for (string) constants used in the ensemble module.
-"""
+"""Constants used in the ensemble module."""
 
 
 from enum import Enum
@@ -23,11 +21,16 @@ PREDICTION_RESULTS = 'prediction_results'
 PREDICTION_ARRAYS = 'prediction_arrays'
 PREDICTION_SUMMARY = 'prediction_summary'
 
+HISTORY = 'history'
+OPTIMIZE = 'optimize'
+SAMPLE = 'sample'
+
 MEAN = 'mean'
 MEDIAN = 'median'
 STANDARD_DEVIATION = 'std'
 PERCENTILE = 'percentile'
 SUMMARY = 'summary'
+WEIGHTED_SIGMA = 'weighted_sigma'
 
 X_NAMES = 'x_names'
 NX = 'n_x'
@@ -52,6 +55,8 @@ COLOR_HIT_NO_BOUNDS = [0., 0.8, 0., 0.9]
 
 
 class EnsembleType(Enum):
+    """Class to specify the type of ensemble."""
+
     ensemble = 1
     sample = 2
     unprocessed_chain = 3

@@ -1,3 +1,4 @@
+# noqa: D400,D205
 """
 pyPESTO
 =======
@@ -21,11 +22,8 @@ from .objective import (
     Objective,
     ObjectiveBase,
     OptimizerHistory,
-)
-from .predict import (
-    AmiciPredictor,
-    PredictionConditionResult,
-    PredictionResult,
+    FD,
+    FDDelta,
 )
 from .problem import Problem
 from .result import (
@@ -41,3 +39,5 @@ from . import logging
 from . import startpoint
 from . import store
 from . import visualize
+
+logging.log()
