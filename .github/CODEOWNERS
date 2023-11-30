@@ -14,7 +14,6 @@
 /doc/example/synthetic_data.ipynb @dilpath
 /docker/ @dweindl
 /pypesto/engine/ @PaulJonasJost
-/pypesto/engine/mpi_pool.py @PaulJonasJost
 /pypesto/ensemble/ @dilpath @PaulJonasJost
 /pypesto/hierarchical/ @dweindl @doresic
 /pypesto/hierarchical/optimal_scaling_approach/ @doresic
