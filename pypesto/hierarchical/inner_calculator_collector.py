@@ -312,6 +312,17 @@ class InnerCalculatorCollector(AmiciCalculator):
             Whether to use the FIM (if available) instead of the Hessian (if
             requested).
         """
+        # As check_edatas check is the same for all inner problems,
+        # we only need to check the first one.
+        if not self.inner_calculators[0].inner_problem.check_edatas(
+            edatas=edatas
+        ):
+            raise ValueError(
+                'The experimental data provided to this call differs from '
+                'the experimental data used to setup the hierarchical '
+                'optimizer.'
+            )
+
         import amici.parameter_mapping
 
         if mode == MODE_RES and any(

@@ -166,6 +166,7 @@ class AmiciInnerProblem(InnerProblem):
     """
 
     def __init__(self, edatas: list[amici.ExpData], **kwargs):
+        self.edatas = edatas
         super().__init__(**kwargs)
 
     def check_edatas(self, edatas: list[amici.ExpData]) -> bool:
@@ -184,20 +185,13 @@ class AmiciInnerProblem(InnerProblem):
         -------
         Whether the data sets are consistent.
         """
-        # TODO replace but edata1==edata2 once this makes it into amici
-        #  https://github.com/AMICI-dev/AMICI/issues/1880
-        data = [
-            amici.numpy.ExpDataView(edata)['observedData'] for edata in edatas
-        ]
+        if all(
+            original_data == edata
+            for original_data, edata in zip(self.edatas, edatas)
+        ):
+            return True
 
-        if len(self.data) != len(data):
-            return False
-
-        for data0, data1 in zip(self.data, data):
-            if not np.array_equal(data0, data1, equal_nan=True):
-                return False
-
-        return True
+        return False
 
 
 def scale_value_dict(

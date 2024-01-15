@@ -125,13 +125,6 @@ class RelativeAmiciCalculator(AmiciCalculator):
         inner_result:
             A dict containing the calculation results: FVAL, GRAD, RDATAS and X_INNER_OPT.
         """
-        if not self.inner_problem.check_edatas(edatas=edatas):
-            raise ValueError(
-                'The experimental data provided to this call differs from '
-                'the experimental data used to setup the hierarchical '
-                'optimizer.'
-            )
-
         if (
             amici_solver.getSensitivityMethod()
             == amici.SensitivityMethod_adjoint
@@ -168,7 +161,6 @@ class RelativeAmiciCalculator(AmiciCalculator):
         inner_result[INNER_PARAMETERS] = np.array(
             [inner_parameters[x_id] for x_id in self.inner_problem.get_x_ids()]
         )
-        # print("relative_inner_parameters: ", inner_parameters)
 
         return inner_result
 
