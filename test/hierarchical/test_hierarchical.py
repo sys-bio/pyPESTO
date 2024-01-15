@@ -234,9 +234,6 @@ def test_hierarchical_calculator_and_objective():
     assert np.isclose(fval_true, fval_false, atol=1e-12, rtol=1e-14)
 
 
-test_hierarchical_calculator_and_objective()
-
-
 def test_analytical_computations():
     """Test analytically-solved hierarchical inner parameters."""
     function = np.exp
