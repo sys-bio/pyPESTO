@@ -1,0 +1,6 @@
+observableId	observableName	observableFormula	noiseFormula	noiseDistribution
+pEGFRtotId	total_egfr	pEGFRtot	noiseParameter1_pEGFRtotId	normal
+pGAREMtotId	total_garem	pGAREMtot	noiseParameter1_pGAREMtotId	normal
+pGAB1totId	total_gab	pGAB1tot	noiseParameter1_pGAB1totId	normal
+pSHC1totId	total_shc	pSHC1tot	noiseParameter1_pSHC1totId	normal
+aRas3Id	total_rasa	aRas3	noiseParameter1_aRas3Id	normal

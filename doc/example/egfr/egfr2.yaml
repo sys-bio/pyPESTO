@@ -1,0 +1,11 @@
+format_version: 1
+parameter_file: parameters.tsv
+problems:
+  - condition_files:
+    - experimental_conditions_b.tsv
+    measurement_files:
+    - measurement_data_b.tsv
+    observable_files:
+    - observables_b.tsv
+    sbml_files:
+    - EGFR_8b.xml
